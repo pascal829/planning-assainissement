@@ -1,0 +1,56 @@
+[
+  {
+    "code": "X",
+    "label": "Assainissement",
+    "bg": "#ffffff",
+    "fg": "#000000"
+  },
+  {
+    "code": "R",
+    "label": "Point hebdomadaire",
+    "bg": "#4a90d9",
+    "fg": "#ffffff"
+  },
+  {
+    "code": "D",
+    "label": "Télétravail",
+    "bg": "#14eb3f",
+    "fg": "#000000"
+  },
+  {
+    "code": "M",
+    "label": "Ménage voitures/STEP",
+    "bg": "#000000",
+    "fg": "#ffffff"
+  },
+  {
+    "code": "E",
+    "label": "Etalonnage A1",
+    "bg": "#f4ed1a",
+    "fg": "#000000"
+  },
+  {
+    "code": "J",
+    "label": "Journée cohésion",
+    "bg": "#e03c31",
+    "fg": "#ffffff"
+  },
+  {
+    "code": "T",
+    "label": "RTT",
+    "bg": "#000000",
+    "fg": "#d11f1f"
+  },
+  {
+    "code": "Re",
+    "label": "Réseau",
+    "bg": "#00ffa9",
+    "fg": "#000000"
+  },
+  {
+    "code": "Ex",
+    "label": "Exploitation",
+    "bg": "#852323",
+    "fg": "#e5e817"
+  }
+]

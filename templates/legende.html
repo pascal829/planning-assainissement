@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Légende du planning</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <h1>Gérer la légende</h1>
+  <div class="actions">
+    <a href="{{ url_for('index') }}" class="btn">&larr; Retour au planning</a>
+    <a href="{{ url_for('logout') }}" class="btn">Se déconnecter</a>
+  </div>
+</header>
+
+<div class="legend-editor">
+  <form method="post">
+    <table class="legend-form">
+      <thead>
+        <tr><th>Code</th><th>Libellé</th><th>Couleur fond</th><th>Couleur texte</th><th></th></tr>
+      </thead>
+      <tbody id="legend-body">
+        {% for entry in legend %}
+        <tr>
+          <td><input type="text" name="code" value="{{ entry.code }}" maxlength="4" required></td>
+          <td><input type="text" name="label" value="{{ entry.label }}" style="width:220px"></td>
+          <td><input type="color" name="bg" value="{{ entry.bg }}"></td>
+          <td><input type="color" name="fg" value="{{ entry.fg }}"></td>
+          <td><button type="button" onclick="this.closest('tr').remove()">Supprimer</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="button" id="add-row">+ Ajouter un code</button>
+    <br><br>
+    <button type="submit" class="btn btn-primary">Enregistrer la légende</button>
+  </form>
+
+  <hr style="margin:30px 0;">
+
+  <h2>Notes numérotées (1 à {{ notes|length }})</h2>
+  <p>Comme sur ta feuille papier : chaque numéro renvoie à une note libre, modifiable ci-dessous.</p>
+  <form method="post" action="{{ url_for('notes_save') }}">
+    <table class="legend-form">
+      <tbody>
+        {% for note in notes %}
+        <tr>
+          <td class="note-num">{{ note.num }}</td>
+          <td><input type="text" name="note_{{ note.num }}" value="{{ note.text }}" style="width:500px"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary">Enregistrer les notes</button>
+  </form>
+</div>
+
+<script>
+document.getElementById("add-row").addEventListener("click", () => {
+  const tbody = document.getElementById("legend-body");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input type="text" name="code" maxlength="4" required></td>
+    <td><input type="text" name="label" style="width:220px"></td>
+    <td><input type="color" name="bg" value="#ffffff"></td>
+    <td><input type="color" name="fg" value="#000000"></td>
+    <td><button type="button" onclick="this.closest('tr').remove()">Supprimer</button></td>
+  `;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>

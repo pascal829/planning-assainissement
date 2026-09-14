@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Planning Assainissement — Semaine {{ week }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>REGIE ASSAINISSEMENT</h1>
+  <div class="week-nav">
+    <a href="{{ url_for('index', year=prev_year, week=prev_week) }}" class="btn">&larr; Semaine préc.</a>
+    <div class="week-label">
+      <strong>Semaine {{ week }}</strong><br>
+      <span>{{ date_range }}</span>
+    </div>
+    <a href="{{ url_for('index', year=next_year, week=next_week) }}" class="btn">Semaine suiv. &rarr;</a>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('astreintes.index') }}" class="btn">Astreintes</a>
+    <a href="{{ url_for('export_pdf', year=year, week=week) }}" class="btn btn-primary">Exporter en PDF</a>
+    <a href="{{ url_for('legende') }}" class="btn">Gérer la légende</a>
+  </div>
+</header>
+
+<div class="table-wrap">
+<table class="planning">
+  <thead>
+    <tr>
+      <th rowspan="3" class="label-col"></th>
+      {% for day in days %}
+        <th colspan="{{ half_days|length * agents|length }}">{{ day }}</th>
+      {% endfor %}
+    </tr>
+    <tr>
+      {% for day in days %}
+        {% for half in half_days %}
+          <th colspan="{{ agents|length }}">{{ half }}</th>
+        {% endfor %}
+      {% endfor %}
+    </tr>
+    <tr>
+      {% for day in days %}
+        {% for half in half_days %}
+          {% for agent in agents %}
+            <th class="agent-col">{{ agent }}</th>
+          {% endfor %}
+        {% endfor %}
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% set ns = namespace(section=None) %}
+    {% for row in rows %}
+      {% if row.section != ns.section %}
+        {% set ns.section = row.section %}
+        <tr class="section-row">
+          <td colspan="{{ 1 + (days|length * half_days|length * agents|length) }}">{{ row.section }}</td>
+        </tr>
+      {% endif %}
+      <tr>
+        <td class="label-col">{{ row.label }}</td>
+        {% for day in days %}
+          {% for half in half_days %}
+            {% for agent in agents %}
+              {% set key = cell_key(row.label, day, half, agent) %}
+              {% set val = data.get(key, "") %}
+              {% set leg = legend_map.get(val) %}
+              <td class="cell">
+                <input
+                  type="text"
+                  maxlength="4"
+                  value="{{ val }}"
+                  data-row="{{ row.label }}"
+                  data-day="{{ day }}"
+                  data-half="{{ half }}"
+                  data-agent="{{ agent }}"
+                  style="{% if leg %}background:{{ leg.bg }};color:{{ leg.fg }};{% endif %}"
+                >
+              </td>
+            {% endfor %}
+          {% endfor %}
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<section class="legend-preview">
+  <h2>Légende</h2>
+  <ul>
+    {% for entry in legend %}
+      <li><span class="swatch" style="background:{{ entry.bg }};color:{{ entry.fg }};">{{ entry.code }}</span> {{ entry.label }}</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="legend-preview">
+  <h2>Notes numérotées</h2>
+  <ul class="notes-list">
+    {% for note in notes if note.text %}
+      <li><span class="swatch note-swatch">{{ note.num }}</span> {{ note.text }}</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<script>
+const YEAR = {{ year }};
+const WEEK = {{ week }};
+const LEGEND = {{ legend|tojson }};
+</script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

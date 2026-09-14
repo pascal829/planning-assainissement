@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Gérer les agents d'astreinte</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <h1>Gérer les agents d'astreinte</h1>
+  <div class="actions">
+    <a href="{{ url_for('astreintes.index') }}" class="btn">&larr; Retour au planning astreintes</a>
+    <a href="{{ url_for('logout') }}" class="btn">Se déconnecter</a>
+  </div>
+</header>
+
+<div class="legend-editor">
+
+  <h2>Agents existants</h2>
+  <table class="legend-form">
+    <thead>
+      <tr><th>Nom</th><th>Section</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for agent in agents %}
+      <tr>
+        <form method="post">
+          <input type="hidden" name="action" value="update">
+          <input type="hidden" name="agent_id" value="{{ agent.id }}">
+          <td><input type="text" name="name" value="{{ agent.name }}" style="width:220px"></td>
+          <td>
+            <select name="section">
+              {% for s in sections %}
+                <option value="{{ s }}" {% if s == agent.section %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <button type="submit">Enregistrer</button>
+        </form>
+        <form method="post" style="display:inline" onsubmit="return confirm('Supprimer {{ agent.name }} ? Les astreintes déjà saisies pour cet agent resteront enregistrées mais ne seront plus rattachées à un nom.');">
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="agent_id" value="{{ agent.id }}">
+          <button type="submit" class="btn-danger">Supprimer</button>
+        </form>
+          </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3">Aucun agent pour l'instant — ajoute le premier ci-dessous.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Ajouter un agent</h2>
+  <form method="post">
+    <input type="hidden" name="action" value="add">
+    <input type="text" name="name" placeholder="Nom de l'agent" required style="width:220px">
+    <select name="section" required>
+      {% for s in sections %}
+        <option value="{{ s }}">{{ s }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Ajouter</button>
+  </form>
+
+</div>
+</body>
+</html>

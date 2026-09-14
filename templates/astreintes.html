@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Astreintes — {{ mois_nom }} {{ year }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>ASTREINTES</h1>
+  <div class="week-nav">
+    <a href="{{ url_for('astreintes.month_view', year=prev_year, month=prev_month) }}" class="btn">&larr; Mois préc.</a>
+    <div class="week-label">
+      <strong>{{ mois_nom }} {{ year }}</strong>
+    </div>
+    <a href="{{ url_for('astreintes.month_view', year=next_year, month=next_month) }}" class="btn">Mois suiv. &rarr;</a>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('index') }}" class="btn">Planning hebdo</a>
+    <a href="{{ url_for('astreintes.agents') }}" class="btn">Gérer les agents</a>
+  </div>
+</header>
+
+<div class="table-wrap">
+<table class="planning astreintes">
+  <thead>
+    <tr>
+      <th rowspan="2" class="label-col"></th>
+      <th colspan="{{ jours|length }}">{{ mois_nom }}</th>
+    </tr>
+    <tr>
+      {% for j in jours %}
+        <th class="{{ 'weekend-col' if j.weekend else '' }}">
+          {{ j.lettre }}<br>{{ j.num }}
+        </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for section in sections %}
+      <tr class="section-row">
+        <td colspan="{{ 1 + jours|length }}">{{ section }}</td>
+      </tr>
+      {% for agent in agents_par_section[section] %}
+        <tr>
+          <td class="label-col">{{ agent.name }}</td>
+          {% for j in jours %}
+            {% set key = cell_key(agent.id, j.num) %}
+            {% set state = data.get(key, "") %}
+            <td class="cell astreinte-cell {{ 'weekend-col' if j.weekend else '' }}">
+              <div class="astreinte-box"
+                   data-agent="{{ agent.id }}"
+                   data-day="{{ j.num }}"
+                   data-state="{{ state }}"
+                   style="{% if state %}background:{{ states[state] }};{% endif %}">
+              </div>
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<p class="astreintes-legend">
+  Clique sur une case pour faire défiler les états :
+  <span class="swatch" style="background:{{ states['bleu'] }};color:#fff;">&nbsp;&nbsp;</span> astreinte semaine —
+  <span class="swatch" style="background:{{ states['orange'] }};color:#fff;">&nbsp;&nbsp;</span> astreinte week-end —
+  case vide = pas d'astreinte.
+</p>
+
+<script>
+const YEAR = {{ year }};
+const MONTH = {{ month }};
+</script>
+<script src="{{ url_for('static', filename='astreintes.js') }}"></script>
+</body>
+</html>
