@@ -1,70 +1,196 @@
 # -*- coding: utf-8 -*-
-import calendar
-import json
-import os
 
+import calendar
+import os
+from datetime import date
+
+import psycopg
 import config
 
 
+def get_connection():
+    database_url = os.environ.get("DATABASE_URL")
+
+    if not database_url:
+        raise RuntimeError("DATABASE_URL n'est pas définie.")
+
+    return psycopg.connect(database_url)
+
+
 def ensure_dirs():
-    os.makedirs(config.ASTREINTES_DATA_DIR, exist_ok=True)
-    os.makedirs(os.path.dirname(config.ASTREINTES_AGENTS_FILE), exist_ok=True)
+    """
+    Conservé pour compatibilité avec l'ancien système JSON.
+    Les données sont maintenant stockées dans Supabase.
+    """
+    return None
 
 
-# --- Agents ---
+# ============================================================
+# AGENTS
+# ============================================================
 
 def load_agents():
-    ensure_dirs()
-    if os.path.exists(config.ASTREINTES_AGENTS_FILE):
-        with open(config.ASTREINTES_AGENTS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, name, section
+            FROM astreintes_agents
+            ORDER BY id
+            """
+        ).fetchall()
+
+    return [
+        {
+            "id": row[0],
+            "name": row[1],
+            "section": row[2],
+        }
+        for row in rows
+    ]
 
 
 def save_agents(agents):
-    ensure_dirs()
-    with open(config.ASTREINTES_AGENTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(agents, f, ensure_ascii=False, indent=2)
+
+    with get_connection() as conn:
+
+        for agent in agents:
+
+            conn.execute(
+                """
+                INSERT INTO astreintes_agents
+                    (id, name, section)
+                VALUES
+                    (%s, %s, %s)
+
+                ON CONFLICT (id)
+                DO UPDATE SET
+                    name = EXCLUDED.name,
+                    section = EXCLUDED.section
+                """,
+                (
+                    agent["id"],
+                    agent["name"],
+                    agent["section"],
+                ),
+            )
+
+        conn.commit()
 
 
 def next_agent_id(agents):
-    return (max((a["id"] for a in agents), default=0)) + 1
+    return (
+        max(
+            (a["id"] for a in agents),
+            default=0
+        )
+        + 1
+    )
 
 
 def add_agent(name, section):
+
     agents = load_agents()
-    agents.append({"id": next_agent_id(agents), "name": name.strip(), "section": section})
-    save_agents(agents)
+
+    agent = {
+        "id": next_agent_id(agents),
+        "name": name.strip(),
+        "section": section,
+    }
+
+    with get_connection() as conn:
+
+        conn.execute(
+            """
+            INSERT INTO astreintes_agents
+                (id, name, section)
+            VALUES
+                (%s, %s, %s)
+            """,
+            (
+                agent["id"],
+                agent["name"],
+                agent["section"],
+            ),
+        )
+
+        conn.commit()
+
+    agents.append(agent)
+
     return agents
 
 
 def update_agent(agent_id, name=None, section=None):
+
     agents = load_agents()
-    for a in agents:
-        if a["id"] == agent_id:
+
+    for agent in agents:
+
+        if agent["id"] == agent_id:
+
             if name is not None:
-                a["name"] = name.strip()
+                agent["name"] = name.strip()
+
             if section is not None:
-                a["section"] = section
+                agent["section"] = section
+
+            break
+
     save_agents(agents)
+
     return agents
 
 
 def delete_agent(agent_id):
-    agents = [a for a in load_agents() if a["id"] != agent_id]
-    save_agents(agents)
+
+    agents = [
+        a
+        for a in load_agents()
+        if a["id"] != agent_id
+    ]
+
+    with get_connection() as conn:
+
+        conn.execute(
+            """
+            DELETE FROM astreintes_agents
+            WHERE id = %s
+            """,
+            (agent_id,),
+        )
+
+        conn.commit()
+
     return agents
 
 
 def agents_by_section():
+
     agents = load_agents()
-    return {section: [a for a in agents if a["section"] == section] for section in config.ASTREINTES_SECTIONS}
+
+    return {
+        section: [
+            a
+            for a in agents
+            if a["section"] == section
+        ]
+        for section in config.ASTREINTES_SECTIONS
+    }
 
 
-# --- Données mensuelles ---
+# ============================================================
+# DONNÉES MENSUELLES
+# ============================================================
 
 def month_file(year, month):
-    return os.path.join(config.ASTREINTES_DATA_DIR, f"{year}-{int(month):02d}.json")
+    """
+    Conservé pour compatibilité avec l'ancien code JSON.
+    """
+    return os.path.join(
+        config.ASTREINTES_DATA_DIR,
+        f"{year}-{int(month):02d}.json"
+    )
 
 
 def cell_key(agent_id, day):
@@ -72,36 +198,107 @@ def cell_key(agent_id, day):
 
 
 def load_month(year, month):
-    ensure_dirs()
-    path = month_file(year, month)
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+
+    data = {}
+
+    with get_connection() as conn:
+
+        rows = conn.execute(
+            """
+            SELECT agent_id, day, state
+            FROM astreintes_cells
+            WHERE year = %s
+              AND month = %s
+            """,
+            (
+                year,
+                month,
+            ),
+        ).fetchall()
+
+    for agent_id, day, state in rows:
+
+        key = cell_key(agent_id, day)
+
+        data[key] = state
+
+    return data
 
 
 def save_cell(year, month, agent_id, day, state):
-    ensure_dirs()
-    data = load_month(year, month)
-    key = cell_key(agent_id, day)
-    if state:
-        data[key] = state
-    else:
-        data.pop(key, None)
-    with open(month_file(year, month), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
 
+    with get_connection() as conn:
+
+        if state:
+
+            conn.execute(
+                """
+                INSERT INTO astreintes_cells
+                    (year, month, agent_id, day, state)
+                VALUES
+                    (%s, %s, %s, %s, %s)
+
+                ON CONFLICT
+                    (year, month, agent_id, day)
+
+                DO UPDATE SET
+                    state = EXCLUDED.state
+                """,
+                (
+                    year,
+                    month,
+                    agent_id,
+                    day,
+                    state,
+                ),
+            )
+
+        else:
+
+            conn.execute(
+                """
+                DELETE FROM astreintes_cells
+                WHERE year = %s
+                  AND month = %s
+                  AND agent_id = %s
+                  AND day = %s
+                """,
+                (
+                    year,
+                    month,
+                    agent_id,
+                    day,
+                ),
+            )
+
+        conn.commit()
+
+
+# ============================================================
+# CALENDRIER
+# ============================================================
 
 def days_in_month(year, month):
     return calendar.monthrange(year, month)[1]
 
 
 def day_letter(year, month, day):
-    # Python: Monday=0 ... Sunday=6 -> correspond directement à JOURS_LETTRE_FR
-    weekday = __import__("datetime").date(year, month, day).weekday()
+
+    weekday = date(
+        year,
+        month,
+        day
+    ).weekday()
+
     return config.JOURS_LETTRE_FR[weekday]
 
 
 def is_weekend(year, month, day):
-    weekday = __import__("datetime").date(year, month, day).weekday()
+
+    weekday = date(
+        year,
+        month,
+        day
+    ).weekday()
+
     return weekday >= 5
