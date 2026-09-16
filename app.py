@@ -9,6 +9,9 @@ import storage
 from auth import admin_required
 
 app = Flask(__name__)
+@app.route("/ping")
+def ping():
+    return "OK", 200
 app.secret_key = config.SECRET_KEY
 
 from astreintes import astreintes_bp
