@@ -17,6 +17,7 @@
     <a href="{{ url_for('astreintes.month_view', year=next_year, month=next_month) }}" class="btn">Mois suiv. &rarr;</a>
   </div>
   <div class="actions">
+    <a href="{{ url_for('astreintes.export_pdf', year=year, month=month) }}" class="btn btn-primary">Exporter en PDF</a>
     <a href="{{ url_for('index') }}" class="btn">Planning hebdo</a>
     <a href="{{ url_for('astreintes.agents') }}" class="btn">Gérer les agents</a>
   </div>

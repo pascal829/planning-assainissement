@@ -93,3 +93,15 @@ def agents():
         agents=astore.load_agents(),
         sections=config.ASTREINTES_SECTIONS,
     )
+
+@astreintes_bp.route("/export/pdf/<int:year>/<int:month>")
+def export_pdf(year, month):
+    from io import BytesIO
+    from flask import send_file
+    from astreintes_pdf import build_astreintes_pdf
+
+    buf = BytesIO()
+    build_astreintes_pdf(buf, year, month)
+    buf.seek(0)
+    return send_file(buf, mimetype="application/pdf", as_attachment=True,
+                     download_name=f"astreintes_{year}_{month:02d}.pdf")
