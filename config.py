@@ -43,7 +43,7 @@ import os
 DATA_DIR = "data/plannings"
 LEGEND_FILE = "data/legend.json"
 NOTES_FILE = "data/notes.json"
-NUMBERED_NOTES_COUNT = 10
+NUMBERED_NOTES_COUNT = 12
 
 # --- Accès protégé à la page "Gérer la légende" ---
 # Change ce mot de passe (ou définis la variable d'environnement ADMIN_PASSWORD
